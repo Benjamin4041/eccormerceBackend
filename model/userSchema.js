@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
     role: {
       type: String,
     //   enum: ['user', 'admin', 'editor'], // Specify the allowed values for the role field
-      default: 'user'
+      default: 'user',
     },
     email: {
       type: String,
