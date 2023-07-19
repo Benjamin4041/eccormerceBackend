@@ -3,15 +3,10 @@ const User = require("../model/userSchema");
 const bcrypt = require("bcrypt");
 const ProductSchema = require("../model/productSchema");
 const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const cloudinary = require("../config/cloud");
+
 require("dotenv").config();
-
-
-
-
-
-
-
-
 
 //register user
 let register = async (req, res) => {
@@ -187,16 +182,38 @@ let getAllProduct = async (req, res) => {
 };
 
 let creatProduct = async (req, res) => {
-
-  let createdProduct = new ProductSchema(req.body);
-  let data = await createdProduct.save();
-  res.send(data);
+  try {
+    let path = req.file.path;
+    let cloudImg = await cloudinary.uploader.upload(path, {
+      imageName: Date.now(),
+      width: 500,
+      heigth: 500,
+      crop: "fill",
+      folder: "Cloths",
+    });
+    let file = cloudImg.secure_url;
+    req.body.productImage ={
+      "imageUrl":file,
+      "imageId":cloudImg.public_id,
+    }
+    let createdProduct = new ProductSchema(req.body);
+    let data = await createdProduct.save();
+    return res.send({ data, file });
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 let deleteProduct = async (req, res) => {
   try {
-    let delProduct = await ProductSchema.findByIdAndDelete(req.params.id);
-    res.send("Product deleted successfuly");
+    let productDetails = await ProductSchema.findById(req.params.id)
+    let imageId = productDetails.productImage.imageId
+    await cloudinary.uploader.destroy(imageId)
+    await ProductSchema.findByIdAndDelete(req.params.id);
+    res.send({
+      message:"Product deleted successfuly",
+     deletedItem: productDetails
+  });
   } catch (error) {
     console.log(error.message);
     res.status(500).json(error.message);

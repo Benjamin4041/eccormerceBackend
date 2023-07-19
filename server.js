@@ -1,7 +1,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const cors = require('cors')
-const User = require("./model/userSchema");
+const cors = require("cors");
 const {
   modifyUser,
   deleteUser,
@@ -24,10 +23,9 @@ const multer = require("multer");
 
 const app = express();
 
-app.use(cors())
+app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static("./images"))
 let uri = process.env.mongodb_uri;
 
 mongoose
@@ -46,7 +44,7 @@ const storage = multer.diskStorage({
     cb(null, "./images");
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now()+"."+ file.originalname.split(".")[1]);
+    cb(null, Date.now() + "." + file.originalname.split(".")[1]);
   },
 });
 
@@ -54,96 +52,81 @@ const upload = multer({
   storage: storage,
 });
 
-// 404 route
-// app.get("*", pageNotFound);
-
 //login route
-app.post("/login", login);
+app.post("/api/login", login);
 
 // create admin account
-app.post("/adminregister", adminMiddleware, adminRegister);
+// app.post("/api/adminregister", adminMiddleware, adminRegister);
+app.post("/api/adminregister", adminRegister);
 
 // create user route
-app.post("/user", register);
+app.post("/api/user", register);
 
 // get all users route
-app.get("/users", adminMiddleware, viewAllUsers);
+app.get("/api/users", adminMiddleware, viewAllUsers);
 
 // get a particular user route
-app.get("/users/:id", allMiddleware, viewUser);
+app.get("/api/users/:id", allMiddleware, viewUser);
 
 // update user infor
-app.put("/user/:id", allMiddleware, modifyUser);
+app.put("/api/user/:id", allMiddleware, modifyUser);
 
 // delete user
-app.delete("/user/:id", adminMiddleware, deleteUser);
-
+app.delete("/api/user/:id", adminMiddleware, deleteUser);
 
 // forgot password
-app.post('/forgot_password',()=>{
-/* add a mailing system that would send a male*/
+app.post("/api/forgot_password", () => {
+  /* add a mailing system that would send a male*/
+});
 
-})
+app.post("/api/reset_password/:id", resetPassword);
 
-app.post('/reset_password/:id',resetPassword)
 // product
-app.get("/allproducts", allMiddleware, getAllProduct);
 
-app.post("/product",adminMiddleware,creatProduct);
+app.get("/api/allproducts", allMiddleware, getAllProduct);
 
-app.get("/product/:id", allMiddleware, getProduct);
+app.post(
+  "/api/product",
+  upload.single("productImage"),
+  adminMiddleware,
+  creatProduct
+);
 
-app.put("/product/:id", adminMiddleware, updateProduct);
+app.get("/api/product/:id", allMiddleware, getProduct);
 
-app.delete("/product/:id", allMiddleware, deleteProduct);
+app.put("/api/product/:id", adminMiddleware, updateProduct);
+
+app.delete("/api/product/:id", allMiddleware, deleteProduct);
 
 // category
 
-app.post("/category", (req, res) => {});
+app.post("/api/category", (req, res) => {});
 
-app.get("/category", (req, res) => {});
+app.get("/api/category", (req, res) => {});
 
-app.put("/category/:id", (req, res) => {});
+app.put("/api/category/:id", (req, res) => {});
 
-app.delete("/category/:id", (req, res) => {});
+app.delete("/api/category/:id", (req, res) => {});
 
 //order
-app.post("/order", (req, res) => {});
+app.post("/api/order", (req, res) => {});
 
-app.get("/order", (req, res) => {});
+app.get("/api/order", (req, res) => {});
 
-app.put("/order/:id", (req, res) => {});
+app.put("/api/order/:id", (req, res) => {});
 
-app.delete("/order/:id", (req, res) => {});
+app.delete("/api/order/:id", (req, res) => {});
 
+// 404 route
+app.get("*", pageNotFound);
 //image upload route
 
-app.post("/upload",upload.single("file"),async (req, res) => {
+// app.post("/api/upload", upload.single("image"), async (req, res) => {});
+
+app.listen(port, async () => {
   try {
-    
-    console.log('./images/'+req.file.filename)
-    
-   return res.send({"image":'./images/'+req.file.filename,"body":req.body});
+    console.log("listening at port http://localhost:" + port);
   } catch (error) {
-    console.log(error);
+    console.log(error.message);
   }
 });
-// app.post("/upload",adminMiddleware ,upload.single('image'), (req, res) => {
-//   try {
-//     res.send("Image uploaded");
-//   } catch (error) {
-//     console.log(error);
-//     res.status(500).send("Error uploading image");
-//   }
-// });
-
-app.listen(port, () => {
-  console.log("listening at port http://localhost:" + port);
-});
-
-
-
-
-
-
-

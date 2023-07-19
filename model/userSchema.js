@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema({
     },
     image:{
         type:String,
-        default:""
+        default:"https://cdn-icons-png.flaticon.com/512/149/149071.png?w=1060&t=st=1689683784~exp=1689684384~hmac=257cd0d92df499c94e425d0b6423b8ad81cc6168c07d05ab9bb9d8b9f77948c7"
     }
   }, { timestamps: true });
   
