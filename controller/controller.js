@@ -5,8 +5,12 @@ const ProductSchema = require("../model/productSchema");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const cloudinary = require("../config/cloud");
+const fs = require("fs");
+const OrderSchema = require("../model/orderSchema");
 
 require("dotenv").config();
+
+const directory = "./images";
 
 //register user
 let register = async (req, res) => {
@@ -19,16 +23,20 @@ let register = async (req, res) => {
       res.send("user already exsist");
     } else {
       if (body.password === body.confirmPassword && password.length >= 8) {
-        let salt = await bcrypt.genSalt(10);
-        let hashPassword = await bcrypt.hash(password, salt);
-        let hashRole = await bcrypt.hash("customer", salt);
+        if (email.includes("@") && email.includes(".com") && email.length > 5) {
+          let salt = await bcrypt.genSalt(10);
+          let hashPassword = await bcrypt.hash(password, salt);
+          let hashRole = await bcrypt.hash("customer", salt);
 
-        body.password = hashPassword;
-        body.role = hashRole;
+          body.password = hashPassword;
+          body.role = hashRole;
 
-        const user = new User(body);
-        const data = await user.save();
-        res.send(data); // Send the saved user data as the response
+          const user = new User(body);
+          const data = await user.save();
+          res.send(data); // Send the saved user data as the response
+        } else {
+          res.send("enter a proper email address");
+        }
       } else {
         res.send("password don't match or lenth is less than 8");
       }
@@ -192,13 +200,31 @@ let creatProduct = async (req, res) => {
       folder: "Cloths",
     });
     let file = cloudImg.secure_url;
-    req.body.productImage ={
-      "imageUrl":file,
-      "imageId":cloudImg.public_id,
-    }
+    req.body.productImage = {
+      imageUrl: file,
+      imageId: cloudImg.public_id,
+    };
     let createdProduct = new ProductSchema(req.body);
     let data = await createdProduct.save();
-    return res.send({ data, file });
+    res.send({ data, file });
+
+    // this is for deleting the image from the image floder after it has been uploaded to the cloud
+    return fs.readdir(directory, (err, files) => {
+      if (err) {
+        console.error("Error reading directory:", err);
+        return;
+      }
+
+      for (const file of files) {
+        fs.unlink(`${directory}/${file}`, (err) => {
+          if (err) {
+            console.error("Error deleting file:", err);
+          } else {
+            console.log(`Deleted file: ${file}`);
+          }
+        });
+      }
+    });
   } catch (error) {
     console.log(error);
   }
@@ -206,14 +232,31 @@ let creatProduct = async (req, res) => {
 
 let deleteProduct = async (req, res) => {
   try {
-    let productDetails = await ProductSchema.findById(req.params.id)
-    let imageId = productDetails.productImage.imageId
-    await cloudinary.uploader.destroy(imageId)
+    let productDetails = await ProductSchema.findById(req.params.id);
+    let imageId = productDetails.productImage.imageId;
+    await cloudinary.uploader.destroy(imageId);
     await ProductSchema.findByIdAndDelete(req.params.id);
     res.send({
-      message:"Product deleted successfuly",
-     deletedItem: productDetails
-  });
+      message: "Product deleted successfuly",
+      deletedItem: productDetails,
+    });
+
+    // fs.readdir(directory, (err, files) => {
+    //   if (err) {
+    //     console.error("Error reading directory:", err);
+    //     return;
+    //   }
+
+    //   for (const file of files) {
+    //     fs.unlink(`${directory}/${file}`, (err) => {
+    //       if (err) {
+    //         console.error("Error deleting file:", err);
+    //       } else {
+    //         console.log(`Deleted file: ${file}`);
+    //       }
+    //     });
+    //   }
+    // });
   } catch (error) {
     console.log(error.message);
     res.status(500).json(error.message);
@@ -243,9 +286,93 @@ let getProduct = async (req, res) => {
   }
 };
 
-let productSearch = () => {};
+let productSearch = async (req, res) => {
+  try {
+    // let{searched}=req.body
+    let search = await ProductSchema.find({ productName: req.body.searched });
+    res.send(search);
+  } catch (error) {
+    console.log(error);
+  }
+};
 
-let userSearch = () => {};
+let userSearch = async (req, res) => {
+  try {
+    // let{searched}=req.body
+    let search = await User.find({ fullname: req.body.searched });
+    res.send(search);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+let createOrders = async (req, res) => {
+  try {
+    let user = await User.findById(req.params.id);
+    let newOrder = new OrderSchema(req.body);
+
+    newOrder.customerName = user.fullname;
+
+    let result = await newOrder.save();
+    res.send(result);
+    /** 
+ * for me to get the time in the formart it is in the  frontend you need to do
+time.split("T").join(" ").replace("Z","").split(".")[0]
+'2023-07-19 16:15:16' 
+ */
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+let viewAllOrders = async (req, res) => {
+  try {
+    let orders = await OrderSchema.find({});
+    res.send(orders);
+  } catch (error) {
+    res.send(error);
+    console.log(error);
+  }
+};
+
+let allAdminUsers = async (req, res) => {
+  try {
+    let allUsers = await User.find({});
+    
+    // Use Promise.all to wait for all asynchronous comparisons
+    let filtered = await Promise.all(allUsers.map(async (user) => {
+      const isCustomer = await bcrypt.compare("admin", user.role);
+      return isCustomer ? user : null;
+    }));
+
+    // Filter out the null values (users that are not customers)
+    filtered = filtered.filter(user => user !== null);
+
+    res.send(filtered);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+let allUsers = async (req, res) => {
+  try {
+    let allUsers = await User.find({});
+    
+    // Use Promise.all to wait for all asynchronous comparisons
+    let filtered = await Promise.all(allUsers.map(async (user) => {
+      const isCustomer = await bcrypt.compare("customer", user.role);
+      return isCustomer ? user : null;
+    }));
+
+    // Filter out the null values (users that are not customers)
+    filtered = filtered.filter(user => user !== null);
+
+    res.send(filtered);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 
 let pageNotFound = async (req, res) => {
   try {
@@ -273,4 +400,10 @@ module.exports = {
   pageNotFound,
   resetPassword,
   forgotpassword,
+  createOrders,
+  viewAllOrders,
+  productSearch,
+  userSearch,
+  allAdminUsers,
+  allUsers
 };

@@ -16,6 +16,13 @@ const {
   getProduct,
   pageNotFound,
   resetPassword,
+  allOrders,
+  viewAllOrders,
+  createOrders,
+  productSearch,
+  userSearch,
+  allAdminUsers,
+  allUsers,
 } = require("./controller/controller");
 require("dotenv").config();
 const { adminMiddleware, allMiddleware } = require("./middlewire/middleware");
@@ -60,7 +67,7 @@ app.post("/api/login", login);
 app.post("/api/adminregister", adminRegister);
 
 // create user route
-app.post("/api/user", register);
+app.post("/api/registeruser", register);
 
 // get all users route
 app.get("/api/users", adminMiddleware, viewAllUsers);
@@ -74,6 +81,16 @@ app.put("/api/user/:id", allMiddleware, modifyUser);
 // delete user
 app.delete("/api/user/:id", adminMiddleware, deleteUser);
 
+
+
+// get all the admin detail
+app.get('/api/alladminuser',allAdminUsers)
+
+
+// get all the users detail
+app.get('/api/alluser',allUsers)
+
+
 // forgot password
 app.post("/api/forgot_password", () => {
   /* add a mailing system that would send a male*/
@@ -86,7 +103,7 @@ app.post("/api/reset_password/:id", resetPassword);
 app.get("/api/allproducts", allMiddleware, getAllProduct);
 
 app.post(
-  "/api/product",
+  "/api/createproduct",
   upload.single("productImage"),
   adminMiddleware,
   creatProduct
@@ -108,14 +125,34 @@ app.put("/api/category/:id", (req, res) => {});
 
 app.delete("/api/category/:id", (req, res) => {});
 
-//order
-app.post("/api/order", (req, res) => {});
 
-app.get("/api/order", (req, res) => {});
 
-app.put("/api/order/:id", (req, res) => {});
 
-app.delete("/api/order/:id", (req, res) => {});
+// create order
+app.post("/api/user/:id/createorder/",createOrders);
+
+
+//get all oders
+app.get("/api/allorder",adminMiddleware,viewAllOrders);
+
+
+// get one order
+
+
+// update the order
+app.put("/api/updateorder/:id", (req, res) => {});
+
+
+// delete the order
+app.delete("/api/deleteorder/:id", (req, res) => {});
+
+
+//search 
+
+app.post('/api/productsearch',productSearch)
+app.post('/api/usersearch',userSearch)
+
+
 
 // 404 route
 app.get("*", pageNotFound);
