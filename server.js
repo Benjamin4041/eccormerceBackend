@@ -16,13 +16,17 @@ const {
   getProduct,
   pageNotFound,
   resetPassword,
-  allOrders,
   viewAllOrders,
   createOrders,
   productSearch,
   userSearch,
   allAdminUsers,
   allUsers,
+  addToCart,
+  deleteFromCart,
+  addAddress,
+  deleteAddress,
+  handleAdmin,
 } = require("./controller/controller");
 require("dotenv").config();
 const { adminMiddleware, allMiddleware } = require("./middlewire/middleware");
@@ -64,7 +68,7 @@ app.post("/api/login", login);
 
 // create admin account
 // app.post("/api/adminregister", adminMiddleware, adminRegister);
-app.post("/api/adminregister", adminRegister);
+app.post("/api/adminregister", adminMiddleware, adminRegister);
 
 // create user route
 app.post("/api/registeruser", register);
@@ -73,7 +77,7 @@ app.post("/api/registeruser", register);
 app.get("/api/users", adminMiddleware, viewAllUsers);
 
 // get a particular user route
-app.get("/api/users/:id", allMiddleware, viewUser);
+app.get("/api/user/:id", allMiddleware, viewUser);
 
 // update user infor
 app.put("/api/user/:id", allMiddleware, modifyUser);
@@ -81,15 +85,21 @@ app.put("/api/user/:id", allMiddleware, modifyUser);
 // delete user
 app.delete("/api/user/:id", adminMiddleware, deleteUser);
 
+// check admin
 
+app.get("/api/checkAdmin/:id", handleAdmin);
 
 // get all the admin detail
-app.get('/api/alladminuser',allAdminUsers)
-
+app.get("/api/alladminuser", adminMiddleware, allAdminUsers);
 
 // get all the users detail
-app.get('/api/alluser',allUsers)
+app.get("/api/alluser", adminMiddleware, allUsers);
 
+// add item to users cart
+app.post("/api/addtocart/:id", allMiddleware, addToCart);
+
+// delete item to user cart
+app.post("/api/deletefromcart/:id", allMiddleware, deleteFromCart);
 
 // forgot password
 app.post("/api/forgot_password", () => {
@@ -113,7 +123,7 @@ app.get("/api/product/:id", allMiddleware, getProduct);
 
 app.put("/api/product/:id", adminMiddleware, updateProduct);
 
-app.delete("/api/product/:id", allMiddleware, deleteProduct);
+app.delete("/api/product/:id", adminMiddleware, deleteProduct);
 
 // category
 
@@ -125,34 +135,28 @@ app.put("/api/category/:id", (req, res) => {});
 
 app.delete("/api/category/:id", (req, res) => {});
 
-
-
-
 // create order
-app.post("/api/user/:id/createorder/",createOrders);
-
+app.post("/api/user/:id/createorder/", allMiddleware, createOrders);
 
 //get all oders
-app.get("/api/allorder",adminMiddleware,viewAllOrders);
-
+app.get("/api/allorder", adminMiddleware, viewAllOrders);
 
 // get one order
-
 
 // update the order
 app.put("/api/updateorder/:id", (req, res) => {});
 
-
 // delete the order
 app.delete("/api/deleteorder/:id", (req, res) => {});
 
+//search
 
-//search 
+app.post("/api/productsearch", allMiddleware, productSearch);
+app.post("/api/usersearch", adminMiddleware, userSearch);
 
-app.post('/api/productsearch',productSearch)
-app.post('/api/usersearch',userSearch)
+app.post("/api/user/:id/address", allMiddleware, addAddress);
 
-
+app.post("/api/user/:id/deleteaddress", allMiddleware, deleteAddress);
 
 // 404 route
 app.get("*", pageNotFound);

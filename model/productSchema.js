@@ -15,6 +15,7 @@ const productSchema = new mongoose.Schema(
     productSlug: {},
     productTags: { type: Array },
     productColors:{type: Array,required:true},
+    productSize:{type:Array,required:true}
   },
   {
     timestamps: true,

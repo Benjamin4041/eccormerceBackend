@@ -7,6 +7,8 @@ const multer = require("multer");
 const cloudinary = require("../config/cloud");
 const fs = require("fs");
 const OrderSchema = require("../model/orderSchema");
+const { default: mongoose } = require("mongoose");
+const newAddress = require("../model/addressSchema");
 
 require("dotenv").config();
 
@@ -88,6 +90,17 @@ let adminRegister = async (req, res) => {
 //update user controller
 let modifyUser = async (req, res) => {
   try {
+    let keys = Object.keys(req.body);
+    keys.forEach((key) => {
+      if (req.body[key] == "") {
+        delete req.body[key];
+      } else {
+        req.body.key;
+      }
+    });
+    if (req.body == {}) {
+      res.send("these's nothing to change");
+    }
     const user = await User.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
     }); // Find and update the user by the provided ID
@@ -110,7 +123,8 @@ let deleteUser = async (req, res) => {
 // see one user details
 let viewUser = async (req, res) => {
   try {
-    User.findById(req.params.id);
+    let userDetails = await User.findById(req.params.id);
+    res.send(userDetails);
   } catch (error) {
     console.log(error);
   }
@@ -126,6 +140,21 @@ let viewAllUsers = async (req, res) => {
   }
 };
 
+// check if admin
+
+let handleAdmin = async (req, res) => {
+  try {
+    let user = await User.findById(req.params.id);
+    let checkAdminStatus = await bcrypt.compare("admin", user.role);
+    if (checkAdminStatus) {
+      return res.send({ success: true, message: "You have access" });
+    }
+    res.send({ success: false, message: "Unauthorized" });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 //login
 
 let login = async (req, res) => {
@@ -133,7 +162,7 @@ let login = async (req, res) => {
     let { email, password } = req.body;
     let checkUser = await User.findOne({ email }).select("+password");
     if (checkUser == null) {
-      res.send("user does not exsist");
+      res.send("Check Email or Password");
     }
 
     let passCheck = await bcrypt.compare(password, checkUser.password);
@@ -147,7 +176,8 @@ let login = async (req, res) => {
         process.env.Jwt_secret,
         { expiresIn: "1d" }
       );
-      return res.send("login successful this is your \n token: " + token);
+      // return res.send("login successful this is your \n token: " + token);
+      return res.send({ message: true, token, userId: checkUser._id });
     }
     console.log("Check Email or Password");
     res.send("Check Email or Password");
@@ -338,15 +368,17 @@ let viewAllOrders = async (req, res) => {
 let allAdminUsers = async (req, res) => {
   try {
     let allUsers = await User.find({});
-    
+
     // Use Promise.all to wait for all asynchronous comparisons
-    let filtered = await Promise.all(allUsers.map(async (user) => {
-      const isCustomer = await bcrypt.compare("admin", user.role);
-      return isCustomer ? user : null;
-    }));
+    let filtered = await Promise.all(
+      allUsers.map(async (user) => {
+        const isCustomer = await bcrypt.compare("admin", user.role);
+        return isCustomer ? user : null;
+      })
+    );
 
     // Filter out the null values (users that are not customers)
-    filtered = filtered.filter(user => user !== null);
+    filtered = filtered.filter((user) => user !== null);
 
     res.send(filtered);
   } catch (error) {
@@ -357,15 +389,17 @@ let allAdminUsers = async (req, res) => {
 let allUsers = async (req, res) => {
   try {
     let allUsers = await User.find({});
-    
+
     // Use Promise.all to wait for all asynchronous comparisons
-    let filtered = await Promise.all(allUsers.map(async (user) => {
-      const isCustomer = await bcrypt.compare("customer", user.role);
-      return isCustomer ? user : null;
-    }));
+    let filtered = await Promise.all(
+      allUsers.map(async (user) => {
+        const isCustomer = await bcrypt.compare("customer", user.role);
+        return isCustomer ? user : null;
+      })
+    );
 
     // Filter out the null values (users that are not customers)
-    filtered = filtered.filter(user => user !== null);
+    filtered = filtered.filter((user) => user !== null);
 
     res.send(filtered);
   } catch (error) {
@@ -373,6 +407,103 @@ let allUsers = async (req, res) => {
   }
 };
 
+let addToCart = async (req, res) => {
+  try {
+    let product = await ProductSchema.findById(req.body.id);
+    let user = await User.findById(req.params.id);
+    let userPurchasedQuantity = req.body.userPurchasedQuantity;
+
+    let newProduct = product.toObject();
+    Reflect.deleteProperty(newProduct, "productQuantity");
+
+    newProduct.userPurchasedQuantity = userPurchasedQuantity;
+    newProduct.subTotal = newProduct.productPrice * userPurchasedQuantity;
+
+    user.cart.push(newProduct);
+
+    let cart = user.cart;
+
+    /*
+    try getting the user first then then update the user content to 
+    what you want and then pass it to the next line of code which 
+    would do the update.
+    */
+    // res.send(user);
+    let updateUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { cart: cart },
+      { new: true }
+    );
+    res.send({
+      "success status": true,
+      message: "Product Added successfuly",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.send(error);
+  }
+};
+
+let deleteFromCart = async (req, res) => {
+  try {
+    let product = await ProductSchema.findById(req.body.id);
+    let user = await User.findById(req.params.id);
+    let userCart = user.cart;
+    userCart.splice(
+      userCart.indexOf((item) => item._id === req.body.id),
+      1
+    );
+    let updateUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { cart: userCart },
+      { new: true }
+    );
+    res.send(updateUser);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+let addAddress = async (req, res) => {
+  try {
+    let userDetail = await User.findById(req.params.id);
+    let updatedUserDetails = userDetail.toObject();
+    let createAddress = new newAddress(req.body);
+    await createAddress.save();
+    let addresses = [...updatedUserDetails.address, createAddress];
+    let updateUserDetail = await User.findByIdAndUpdate(
+      req.params.id,
+      { address: addresses },
+      { new: true }
+    );
+    res.send(updateUserDetail);
+  } catch (error) {
+    // Handle validation errors
+
+    // Handle other unexpected errors
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+let deleteAddress = async (req, res) => {
+  try {
+    let userDetail = await User.findById(req.params.id);
+    await newAddress.findByIdAndDelete(req.body.id);
+    let updatedUserDetails = userDetail.toObject();
+    updatedUserDetails = updatedUserDetails.address.filter(
+      (item) => item._id != req.body.id
+    );
+    userDetail = await User.findByIdAndUpdate(
+      req.params.id,
+      { address: updatedUserDetails },
+      { new: true }
+    );
+    res.send({ message: "Address deleted", "user detail": userDetail });
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 let pageNotFound = async (req, res) => {
   try {
@@ -405,5 +536,10 @@ module.exports = {
   productSearch,
   userSearch,
   allAdminUsers,
-  allUsers
+  allUsers,
+  addToCart,
+  deleteFromCart,
+  addAddress,
+  deleteAddress,
+  handleAdmin,
 };
