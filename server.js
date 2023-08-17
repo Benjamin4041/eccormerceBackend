@@ -27,6 +27,7 @@ const {
   addAddress,
   deleteAddress,
   handleAdmin,
+  deleteOrder,
 } = require("./controller/controller");
 require("dotenv").config();
 const { adminMiddleware, allMiddleware } = require("./middlewire/middleware");
@@ -74,7 +75,7 @@ app.post("/api/adminregister", adminMiddleware, adminRegister);
 app.post("/api/registeruser", register);
 
 // get all users route
-app.get("/api/users", adminMiddleware, viewAllUsers);
+app.get("/api/users", adminMiddleware, allUsers);
 
 // get a particular user route
 app.get("/api/user/:id", allMiddleware, viewUser);
@@ -147,7 +148,7 @@ app.get("/api/allorder", adminMiddleware, viewAllOrders);
 app.put("/api/updateorder/:id", (req, res) => {});
 
 // delete the order
-app.delete("/api/deleteorder/:id", (req, res) => {});
+app.delete("/api/deleteorder/:id",deleteOrder);
 
 //search
 

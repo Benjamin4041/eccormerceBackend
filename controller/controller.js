@@ -101,6 +101,7 @@ let modifyUser = async (req, res) => {
     if (req.body == {}) {
       res.send("these's nothing to change");
     }
+    
     const user = await User.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
     }); // Find and update the user by the provided ID
@@ -113,7 +114,8 @@ let modifyUser = async (req, res) => {
 // delete user
 let deleteUser = async (req, res) => {
   try {
-    await User.findByIdAndDelete(req.params.id);
+    let deletedUser = await User.findByIdAndDelete(req.params.id);
+    console.log(deletedUser);
     res.send("deleted");
   } catch (error) {
     res.status(500).send(error.message);
@@ -147,6 +149,7 @@ let handleAdmin = async (req, res) => {
     let user = await User.findById(req.params.id);
     let checkAdminStatus = await bcrypt.compare("admin", user.role);
     if (checkAdminStatus) {
+      console.log({ success: true, message: "You have access" });
       return res.send({ success: true, message: "You have access" });
     }
     res.send({ success: false, message: "Unauthorized" });
@@ -237,8 +240,9 @@ let creatProduct = async (req, res) => {
     let createdProduct = new ProductSchema(req.body);
     let data = await createdProduct.save();
     res.send({ data, file });
+    console.log({ data, file });
 
-    // this is for deleting the image from the image floder after it has been uploaded to the cloud
+    // this is for deleting the image from the image folder after it has been uploaded to the cloud
     return fs.readdir(directory, (err, files) => {
       if (err) {
         console.error("Error reading directory:", err);
@@ -264,12 +268,20 @@ let deleteProduct = async (req, res) => {
   try {
     let productDetails = await ProductSchema.findById(req.params.id);
     let imageId = productDetails.productImage.imageId;
-    await cloudinary.uploader.destroy(imageId);
-    await ProductSchema.findByIdAndDelete(req.params.id);
-    res.send({
-      message: "Product deleted successfuly",
-      deletedItem: productDetails,
-    });
+    if (imageId) {
+      await cloudinary.uploader.destroy(imageId);
+      await ProductSchema.findByIdAndDelete(req.params.id);
+      res.send({
+        message: "Product deleted successfuly",
+        deletedItem: productDetails,
+      });
+    } else {
+      await ProductSchema.findByIdAndDelete(req.params.id);
+      res.send({
+        message: "Product deleted successfuly",
+        deletedItem: productDetails,
+      });
+    }
 
     // fs.readdir(directory, (err, files) => {
     //   if (err) {
@@ -293,17 +305,32 @@ let deleteProduct = async (req, res) => {
   }
 };
 
+
 let updateProduct = async (req, res) => {
   try {
-    let updatedProduct = ProductSchema.findOneAndUpdate(
+    // Uncomment and adjust this section to handle optional or empty values
+    for (const key in req.body) {
+      if (req.body[key] === "") {
+        delete req.body[key];
+      }
+    }
+
+    const updatedProduct = await ProductSchema.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true }
     );
-    res.send("product updated");
+
+    if (!updatedProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Product updated", detail: updatedProduct });
   } catch (error) {
-    res.send(error);
-    console.log(error);
+    console.log(error.message);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -312,7 +339,7 @@ let getProduct = async (req, res) => {
     let product = await ProductSchema.findById(req.params.id);
     res.send(product);
   } catch (error) {
-    console.log(error);
+    console.log(error.message);
   }
 };
 
@@ -350,6 +377,16 @@ let createOrders = async (req, res) => {
 time.split("T").join(" ").replace("Z","").split(".")[0]
 '2023-07-19 16:15:16' 
  */
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+let deleteOrder = async () => {
+  try {
+    let deletedOrder = OrderSchema.findByIdAndDelete(req.params.id);
+    console.log(deleteOrder);
+    res.send({ success: true, message: "This order has been deleted" });
   } catch (error) {
     console.log(error);
   }
@@ -542,4 +579,5 @@ module.exports = {
   addAddress,
   deleteAddress,
   handleAdmin,
+  deleteOrder,
 };
