@@ -243,22 +243,22 @@ let creatProduct = async (req, res) => {
     console.log({ data, file });
 
     // this is for deleting the image from the image folder after it has been uploaded to the cloud
-    return fs.readdir(directory, (err, files) => {
-      if (err) {
-        console.error("Error reading directory:", err);
-        return;
-      }
+    // return fs.readdir(directory, (err, files) => {
+    //   if (err) {
+    //     console.error("Error reading directory:", err);
+    //     return;
+    //   }
 
-      for (const file of files) {
-        fs.unlink(`${directory}/${file}`, (err) => {
-          if (err) {
-            console.error("Error deleting file:", err);
-          } else {
-            console.log(`Deleted file: ${file}`);
-          }
-        });
-      }
-    });
+    //   for (const file of files) {
+    //     fs.unlink(`${directory}/${file}`, (err) => {
+    //       if (err) {
+    //         console.error("Error deleting file:", err);
+    //       } else {
+    //         console.log(`Deleted file: ${file}`);
+    //       }
+    //     });
+    //   }
+    // });
   } catch (error) {
     console.log(error);
   }
