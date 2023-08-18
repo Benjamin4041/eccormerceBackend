@@ -322,7 +322,10 @@ let updateProduct = async (req, res) => {
       crop: "fill",
       folder: "Cloths",
     });
+    
     let file = cloudImg.secure_url;
+
+
     req.body.productImage = {
       imageUrl: file,
       imageId: cloudImg.public_id,
