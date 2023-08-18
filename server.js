@@ -122,7 +122,7 @@ app.post(
 
 app.get("/api/product/:id", allMiddleware, getProduct);
 
-app.put("/api/product/:id", adminMiddleware, updateProduct);
+app.put("/api/product/:id",upload.single("productImage"), adminMiddleware, updateProduct);
 
 app.delete("/api/product/:id", adminMiddleware, deleteProduct);
 
