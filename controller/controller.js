@@ -309,13 +309,6 @@ let deleteProduct = async (req, res) => {
 let updateProduct = async (req, res) => {
   try {
     let path = req.file.path;
-    // Uncomment and adjust this section to handle optional or empty values
-    for (const key in req.body) {
-      if (req.body[key] === "") {
-        delete req.body[key];
-      }
-    }
-    
     let cloudImg = await cloudinary.uploader.upload(path, {
       imageName: Date.now(),
       width: 500,
@@ -333,6 +326,13 @@ let updateProduct = async (req, res) => {
     };
 
 
+
+    // Uncomment and adjust this section to handle optional or empty values
+    for (const key in req.body) {
+      if (req.body[key] === "") {
+        delete req.body[key];
+      }
+    }
     const updatedProduct = await ProductSchema.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -345,7 +345,8 @@ let updateProduct = async (req, res) => {
 
     res
       .status(200)
-      .json({ message: "Product updated", detail: updatedProduct });
+      .json({ message: "Product updated", detail: updatedProduct }); 
+
     // this is for deleting the image from the image folder after it has been uploaded to the cloud
     return fs.readdir(directory, (err, files) => {
       if (err) {
