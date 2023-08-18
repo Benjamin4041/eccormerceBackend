@@ -315,7 +315,7 @@ let updateProduct = async (req, res) => {
         delete req.body[key];
       }
     }
-    let path = req.file.path;
+    
     let cloudImg = await cloudinary.uploader.upload(path, {
       imageName: Date.now(),
       width: 500,
