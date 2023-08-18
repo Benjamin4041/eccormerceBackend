@@ -243,22 +243,22 @@ let creatProduct = async (req, res) => {
     console.log({ data, file });
 
     // this is for deleting the image from the image folder after it has been uploaded to the cloud
-    // return fs.readdir(directory, (err, files) => {
-    //   if (err) {
-    //     console.error("Error reading directory:", err);
-    //     return;
-    //   }
+    return fs.readdir(directory, (err, files) => {
+      if (err) {
+        console.error("Error reading directory:", err);
+        return;
+      }
 
-    //   for (const file of files) {
-    //     fs.unlink(`${directory}/${file}`, (err) => {
-    //       if (err) {
-    //         console.error("Error deleting file:", err);
-    //       } else {
-    //         console.log(`Deleted file: ${file}`);
-    //       }
-    //     });
-    //   }
-    // });
+      for (const file of files) {
+        fs.unlink(`${directory}/${file}`, (err) => {
+          if (err) {
+            console.error("Error deleting file:", err);
+          } else {
+            console.log(`Deleted file: ${file}`);
+          }
+        });
+      }
+    });
   } catch (error) {
     console.log(error);
   }
@@ -314,6 +314,20 @@ let updateProduct = async (req, res) => {
         delete req.body[key];
       }
     }
+    let path = req.file.path;
+    let cloudImg = await cloudinary.uploader.upload(path, {
+      imageName: Date.now(),
+      width: 500,
+      heigth: 500,
+      crop: "fill",
+      folder: "Cloths",
+    });
+    let file = cloudImg.secure_url;
+    req.body.productImage = {
+      imageUrl: file,
+      imageId: cloudImg.public_id,
+    };
+
 
     const updatedProduct = await ProductSchema.findByIdAndUpdate(
       req.params.id,
@@ -328,6 +342,26 @@ let updateProduct = async (req, res) => {
     res
       .status(200)
       .json({ message: "Product updated", detail: updatedProduct });
+    // this is for deleting the image from the image folder after it has been uploaded to the cloud
+    return fs.readdir(directory, (err, files) => {
+      if (err) {
+        console.error("Error reading directory:", err);
+        return;
+      }
+
+      for (const file of files) {
+        fs.unlink(`${directory}/${file}`, (err) => {
+          if (err) {
+            console.error("Error deleting file:", err);
+          } else {
+            console.log(`Deleted file: ${file}`);
+          }
+        });
+      }
+    });
+
+
+
   } catch (error) {
     console.log(error.message);
     res.status(500).json({ message: "Internal server error" });
