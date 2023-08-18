@@ -308,6 +308,7 @@ let deleteProduct = async (req, res) => {
 
 let updateProduct = async (req, res) => {
   try {
+    let path = req.file.path;
     // Uncomment and adjust this section to handle optional or empty values
     for (const key in req.body) {
       if (req.body[key] === "") {
@@ -322,7 +323,7 @@ let updateProduct = async (req, res) => {
       crop: "fill",
       folder: "Cloths",
     });
-    
+
     let file = cloudImg.secure_url;
 
 
